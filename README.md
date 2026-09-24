@@ -2,10 +2,11 @@
 
 **Reference Implementation of the 3-Tier Enterprise Agentic Architecture & Zero-Compute Human-in-the-Loop (HITL) Pattern on Google Cloud**
 
-[![GCP Project](https://img.shields.io/badge/GCP_Project-wortz--project--352116-4285F4?logo=googlecloud)](https://console.cloud.google.com/workflows?project=wortz-project-352116)
 [![Cloud Workflows](https://img.shields.io/badge/Orchestrator-Google_Cloud_Workflows-34A853?logo=googlecloud)](workflows/trend_discovery_flow.yaml)
 [![Antigravity Evals](https://img.shields.io/badge/Antigravity_Evals-100%25_PASSED_(4%2F4)-10B981)](evals/results/latest_run.json)
 [![Pytest](https://img.shields.io/badge/Pytest_Suite-9%2F9_Passing-059669)](tests/)
+
+![Brand Building HITL Approval Example Application Architecture](docs/assets/architecture_diagram.png)
 
 ---
 
