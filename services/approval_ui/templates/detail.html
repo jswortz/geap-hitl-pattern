@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block title %}Review {{ initiative.trend_name }} — HITL Approval & Workflow Callback{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb & Header Status Banner (PRD Section 7.1) -->
+<div class="mb-5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <a href="/" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+            ← Back to Queue
+        </a>
+        <span class="text-slate-600">/</span>
+        <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">{{ initiative.brand_id }}</span>
+        <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-800">{{ initiative.category }}</span>
+        <code class="text-xs text-slate-400">ID: {{ initiative.id }}</code>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <span class="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+            Version <strong id="detail-version" class="text-white">{{ initiative.version }}</strong> • Revision <strong id="detail-revision" class="text-white">{{ initiative.revision_count }}</strong> / 3
+        </span>
+        <div id="status-badge-container">
+            {% if initiative.status == 'PENDING_APPROVAL' %}
+            <span id="current-status-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-400/50 node-waiting-glow">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+                STATUS: PENDING_APPROVAL (WAITING ON CALLBACK)
+            </span>
+            {% elif initiative.status == 'APPROVED' %}
+            <span id="current-status-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 node-approved-glow">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                STATUS: APPROVED (STEP 2 EVENTARC DISPATCHED)
+            </span>
+            {% elif initiative.status == 'REVISION_REQUESTED' %}
+            <span id="current-status-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold bg-purple-500/20 text-purple-300 border border-purple-400/50">
+                🔄 STATUS: REVISION_REQUESTED
+            </span>
+            {% else %}
+            <span id="current-status-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-300 border border-rose-400/50">
+                ✕ STATUS: {{ initiative.status }}
+            </span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Live Cloud Workflows Execution & Zero-Compute Callback State Machine Graph -->
+<section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 mb-6 shadow-xl">
+    <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
+        <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                <span>🔀 Live Cloud Workflows Execution State Machine</span>
+                <span id="workflow-active-step-pill" class="px-2.5 py-0.5 rounded-md text-xs font-mono bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                    Step: {{ graph.active_step }}
+                </span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+                Execution ID: <code class="text-slate-300">{{ graph.workflow_execution_id }}</code>
+            </p>
+        </div>
+        <div class="text-right">
+            <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400 block">Zero-Compute Callback Endpoint</span>
+            <code id="callback-url-display" class="text-[11px] text-emerald-300 bg-slate-950 px-2.5 py-1 rounded border border-slate-800 block mt-0.5 max-w-md truncate">
+                {{ callback.callback_url or 'https://workflowexecutions.googleapis.com/v1/projects/' + project_id + '/.../callbacks/active' }}
+            </code>
+        </div>
+    </div>
+
+    <!-- 9-Node State Machine Visual Pipeline (3 spacious columns x 3 rows so text never overflows) -->
+    <div id="workflow-nodes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+        {% for node in graph.nodes %}
+        <div id="wf-node-{{ node.id }}" class="rounded-xl px-4 py-3 border transition flex flex-col justify-between overflow-hidden
+            {% if node.state == 'WAITING' %}
+                bg-amber-950/35 border-amber-400 text-amber-200 node-waiting-glow
+            {% elif node.state == 'COMPLETED' and node.id == 'terminal_step' and initiative.status == 'APPROVED' %}
+                bg-emerald-950/40 border-emerald-400 text-emerald-200 node-approved-glow
+            {% elif node.state == 'COMPLETED' %}
+                bg-slate-950/90 border-emerald-500/40 text-slate-200
+            {% elif node.state == 'ACTIVE_LOOP' %}
+                bg-purple-950/40 border-purple-400 text-purple-200 node-loop-glow
+            {% else %}
+                bg-slate-950/50 border-slate-800 text-slate-500
+            {% endif %}">
+            <div>
+                <div class="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wider mb-1">
+                    <span class="truncate">{{ node.tier }}</span>
+                    <span class="wf-node-state-badge shrink-0">
+                        {% if node.state == 'WAITING' %}⏸ WAITING
+                        {% elif node.state == 'COMPLETED' %}✓ COMPLETED
+                        {% elif node.state == 'ACTIVE_LOOP' %}🔄 LOOP
+                        {% else %}• PENDING{% endif %}
+                    </span>
+                </div>
+                <p class="text-xs font-bold leading-snug text-white truncate">{{ node.label }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Main Asset Brief Header & Review Action Controls (PRD Section 3.4 & 7.1) -->
+<section class="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-700/80 p-6 mb-6 shadow-2xl">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-3xl">
+            <div class="flex items-center gap-2.5">
+                <span class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    Confidence Score: {{ (brief.confidence_score * 100) | int }}%
+                </span>
+                <span class="text-xs text-slate-400">Generated at {{ brief.created_at }}</span>
+            </div>
+            <h1 id="brief-trend-name" class="text-2xl font-extrabold text-white tracking-tight">{{ brief.trend_name }}</h1>
+            <p id="brief-trend-summary" class="text-sm text-slate-300 leading-relaxed">{{ brief.trend_summary }}</p>
+            <div class="pt-1">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Target Persona: </span>
+                <span class="text-xs text-blue-300 font-medium">{{ brief.target_audience }}</span>
+            </div>
+        </div>
+
+        <!-- Review Action Toolbar (Approve / Request Revision / Reject) -->
+        <div class="flex flex-col sm:flex-row lg:flex-col gap-2.5 min-w-[250px]">
+            <button type="button" id="btn-approve-initiative"
+                onclick="submitReviewDecision('{{ initiative.id }}', 'APPROVED')"
+                class="w-full py-3 px-5 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/25 transition flex items-center justify-center gap-2">
+                <span>✅ Approve &amp; Resume Workflow</span>
+            </button>
+
+            <button type="button" id="btn-open-revision-drawer"
+                onclick="toggleRevisionDrawer()"
+                {% if initiative.revision_count >= 3 %}disabled{% endif %}
+                class="w-full py-2.5 px-5 rounded-xl font-bold text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 transition flex items-center justify-center gap-2 disabled:opacity-40">
+                <span>🔄 Request Revision &amp; Distill Memory ({{ initiative.revision_count }}/3)</span>
+            </button>
+
+            <button type="button" id="btn-reject-initiative"
+                onclick="toggleRejectDrawer()"
+                class="w-full py-2 px-5 rounded-xl font-semibold text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition flex items-center justify-center gap-2">
+                <span>✕ Reject Initiative</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Request Revision Drawer (PRD Section 7.1) -->
+    <div id="revision-drawer" class="hidden mt-6 pt-5 border-t border-amber-500/30 bg-amber-950/15 rounded-xl p-4">
+        <h3 class="text-sm font-bold text-amber-300 mb-2">Request Agent 1 Revision &amp; Continuous Learning Memory Distillation</h3>
+        <p class="text-xs text-slate-300 mb-3">
+            Your critique will wake the suspended Cloud Workflow via HTTP callback, distill a new atomic rule into the <strong>Vertex AI Memory Bank</strong> (<code class="text-amber-200">brands/{{ initiative.brand_id }}/guidelines</code>), and re-invoke Agent 1 for Revision #{{ initiative.revision_count + 1 }}.
+        </p>
+        <div class="flex flex-wrap gap-3 mb-3 text-xs">
+            <label class="inline-flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-200">
+                <input type="checkbox" class="rev-tag-checkbox" value="Tone & Brand Voice" checked> Tone &amp; Brand Voice
+            </label>
+            <label class="inline-flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-200">
+                <input type="checkbox" class="rev-tag-checkbox" value="Claim Substantiation" checked> Claim Substantiation
+            </label>
+            <label class="inline-flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-200">
+                <input type="checkbox" class="rev-tag-checkbox" value="Visual Direction"> Visual Direction
+            </label>
+        </div>
+        <textarea id="revision-comments-input" rows="3"
+            class="w-full rounded-xl bg-slate-950 border border-amber-500/40 px-3.5 py-2.5 text-sm text-white placeholder-slate-500"
+            placeholder="Enter specific revision instructions (min 10 characters)...">Emphasize 90% cold-water wash energy savings with scientific enzyme clarity and strictly avoid any silk stain claims.</textarea>
+        <p id="revision-validation-error" class="hidden text-xs text-rose-400 mt-1"></p>
+        <div class="flex items-center justify-end gap-2 mt-3">
+            <button type="button" onclick="toggleRevisionDrawer()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300">Cancel</button>
+            <button type="button" id="btn-submit-revision"
+                onclick="submitReviewDecision('{{ initiative.id }}', 'REVISION_REQUESTED')"
+                class="px-5 py-2 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg transition">
+                ⚡ Dispatch Callback &amp; Run Revision Loop
+            </button>
+        </div>
+    </div>
+
+    <!-- Reject Modal Drawer -->
+    <div id="reject-drawer" class="hidden mt-6 pt-5 border-t border-rose-500/30 bg-rose-950/15 rounded-xl p-4">
+        <h3 class="text-sm font-bold text-rose-300 mb-2">Reject Initiative Brief</h3>
+        <textarea id="reject-comments-input" rows="2"
+            class="w-full rounded-xl bg-slate-950 border border-rose-500/40 px-3.5 py-2 text-sm text-white"
+            placeholder="Mandatory cancellation reason...">Off-strategy for Q4 seasonal calendar; terminating workflow execution.</textarea>
+        <div class="flex items-center justify-end gap-2 mt-3">
+            <button type="button" onclick="toggleRejectDrawer()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300">Cancel</button>
+            <button type="button" id="btn-confirm-reject"
+                onclick="submitReviewDecision('{{ initiative.id }}', 'REJECTED')"
+                class="px-5 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white">
+                Confirm Rejection
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Two-Column Grounding Citations & Vertex AI Memory Bank Compliance Matrix -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Left: Google Search Grounding Inspector (PRD Section 3.4) -->
+    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-5 shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <div>
+                <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span>🔍 Google Search Grounding Citations</span>
+                    <span class="px-2 py-0.5 rounded text-[11px] bg-blue-500/15 text-blue-300 border border-blue-500/30">{{ brief.citations | length }} Verified URLs</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Deterministically filtered against raw search grounding URLs (0% hallucination tolerance)</p>
+            </div>
+        </div>
+        <div class="space-y-3">
+            {% for cit in brief.citations %}
+            <div class="rounded-xl bg-slate-950 border border-slate-800 p-3.5 hover:border-blue-500/40 transition">
+                <div class="flex items-start justify-between gap-2">
+                    <a href="{{ cit.url }}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-blue-300 hover:underline">
+                        {{ cit.title }} ↗
+                    </a>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">
+                        HTTP 200 • {{ cit.publication_date or '2026' }}
+                    </span>
+                </div>
+                <p class="text-xs text-slate-300 mt-1.5 italic">"{{ cit.snippet }}"</p>
+                <code class="text-[10px] text-slate-500 block mt-1 truncate">{{ cit.url }}</code>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Right: Vertex AI Memory Bank Compliance Matrix & Continuous Learning Log -->
+    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-5 shadow-xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <div>
+                <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span>🧠 Vertex AI Memory Bank Compliance Matrix</span>
+                    <span class="px-2 py-0.5 rounded text-[11px] bg-purple-500/15 text-purple-300 border border-purple-500/30">Namespace: brands/{{ initiative.brand_id }}</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">Pre-execution brand directives applied &amp; post-review distilled rules</p>
+            </div>
+        </div>
+        <div id="memories-applied-list" class="space-y-2.5 mb-4">
+            {% for mem in brief.memories_applied %}
+            <div class="rounded-xl bg-slate-950 border border-purple-500/30 p-3 flex items-start gap-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0 mt-0.5">
+                    {{ mem.category }}
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <code class="text-[11px] text-purple-300 font-bold">{{ mem.memory_id }}</code>
+                        <span class="text-[10px] text-emerald-400 font-semibold">✓ Enforced in Prompt</span>
+                    </div>
+                    <p class="text-xs text-slate-200 mt-0.5">{{ mem.directive }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Continuous Learning Sync Log (`memory_sync_events`) -->
+        <div class="pt-3 border-t border-slate-800">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300 mb-2">⚡ Continuous Learning Sync Log (Distilled from Human Review)</h3>
+            <div id="memory-sync-log" class="space-y-2">
+                {% for ev in memory_events %}
+                <div class="rounded-lg bg-amber-950/20 border border-amber-500/30 p-2.5 text-xs">
+                    <div class="flex items-center justify-between text-[11px] text-amber-300 font-semibold">
+                        <span>Rule ID: <code>{{ ev.memory_bank_record_id }}</code></span>
+                        <span>{{ ev.synced_at[:19] }}</span>
+                    </div>
+                    <p class="text-slate-200 font-medium mt-1">{{ ev.distilled_rule }}</p>
+                </div>
+                {% else %}
+                <p class="text-xs text-slate-500">Submit a revision request above to see live Gemini Memory Bank rule distillation.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Proposed Creative Hooks (PRD Section 4.1) -->
+<section class="mb-6">
+    <h2 class="text-base font-bold text-white mb-3">Proposed Creative Expressions &amp; Messaging Hooks ({{ brief.creative_hooks | length }})</h2>
+    <div id="creative-hooks-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for hook in brief.creative_hooks %}
+        <div class="rounded-2xl bg-slate-900 border border-slate-800 p-5 flex flex-col justify-between shadow-lg hover:border-blue-500/40 transition">
+            <div>
+                <div class="flex items-center justify-between text-xs text-blue-400 font-bold uppercase tracking-wider mb-2">
+                    <span>Creative Concept #{{ loop.index }}</span>
+                    <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 text-[10px]">Guardrail Verified</span>
+                </div>
+                <h3 class="text-base font-extrabold text-white mb-2">"{{ hook.headline }}"</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-3">{{ hook.narrative_angle }}</p>
+
+                <div class="mb-3">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">Substantiated Key Claims</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for claim in hook.key_claims %}
+                        <span class="text-[11px] px-2.5 py-0.5 rounded-md bg-blue-500/15 text-blue-200 border border-blue-500/30">
+                            ✓ {{ claim }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="pt-3 border-t border-slate-800/80">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">Art &amp; Visual Direction</span>
+                <p class="text-xs text-slate-300 mt-0.5">{{ hook.visual_direction }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Immutable Audit Trail (`initiative_reviews`) -->
+<section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 shadow-xl">
+    <h2 class="text-sm font-bold text-white mb-3">📜 Immutable Review Audit Trail (AlloyDB <code class="text-blue-300">initiative_reviews</code>)</h2>
+    <div id="audit-trail-list" class="space-y-2.5">
+        {% for rev in reviews %}
+        <div class="rounded-xl bg-slate-950 border border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-3">
+                <span class="px-2.5 py-0.5 rounded-full font-bold
+                    {% if rev.action == 'APPROVED' %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+                    {% elif rev.action == 'REVISION_REQUESTED' %}bg-amber-500/20 text-amber-300 border border-amber-500/30
+                    {% else %}bg-rose-500/20 text-rose-300 border border-rose-500/30{% endif %}">
+                    {{ rev.action }}
+                </span>
+                <span class="font-semibold text-white">{{ rev.reviewer_email }}</span>
+                <span class="text-slate-300">"{{ rev.comments }}"</span>
+            </div>
+            <span class="font-mono text-slate-400">{{ rev.created_at[:19] }} UTC</span>
+        </div>
+        {% else %}
+        <p class="text-xs text-slate-400">No human review decisions recorded yet. Workflow is currently suspended at <code class="text-amber-300">await_human_approval</code>.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

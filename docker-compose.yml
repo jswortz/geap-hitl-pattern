@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  alloydb-omni:
+    image: postgres:16-bookworm
+    container_name: brand-hitl-alloydb-omni
+    environment:
+      POSTGRES_DB: ${ALLOYDB_DATABASE:-brand_hitl_db}
+      POSTGRES_USER: ${ALLOYDB_USER:-postgres}
+      POSTGRES_PASSWORD: ${ALLOYDB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+
+  data-service:
+    build:
+      context: .
+      dockerfile: services/data_service/Dockerfile
+    env_file:
+      - .env.example
+    environment:
+      ALLOYDB_HOST: alloydb-omni
+      ALLOYDB_PORT: 5432
+    ports:
+      - "8002:8002"
+    depends_on:
+      - alloydb-omni
+
+  trend-agent-service:
+    build:
+      context: .
+      dockerfile: services/trend_agent/Dockerfile
+    env_file:
+      - .env.example
+    environment:
+      ALLOYDB_HOST: alloydb-omni
+      DATA_SERVICE_URL: http://data-service:8002
+    ports:
+      - "8001:8001"
+    depends_on:
+      - data-service
+
+  approval-ui:
+    build:
+      context: .
+      dockerfile: services/approval_ui/Dockerfile
+    env_file:
+      - .env.example
+    environment:
+      ALLOYDB_HOST: alloydb-omni
+      DATA_SERVICE_URL: http://data-service:8002
+      AGENT_RUNNER_URL: http://trend-agent-service:8001
+    ports:
+      - "8080:8080"
+    depends_on:
+      - data-service
+      - trend-agent-service

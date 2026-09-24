@@ -1,0 +1,151 @@
+{
+  "suite": "Antigravity Evaluation Harness",
+  "timestamp": "2026-09-24T17:16:55.204188+00:00",
+  "total_cases": 4,
+  "passed_cases": 4,
+  "pass_rate": 1.0,
+  "overall_status": "PASSED",
+  "results": [
+    {
+      "test_id": "eval_01",
+      "brand_id": "brand_apex",
+      "category": "fabric_care",
+      "passed": true,
+      "rubrics": {
+        "schema_conformance": {
+          "passed": true,
+          "score": 1.0,
+          "initiative_id": "8f23a7ba-14e7-484a-a404-b1edebe7db73",
+          "errors": []
+        },
+        "grounding_accuracy": {
+          "passed": true,
+          "score": 1.0,
+          "verified_count": 3,
+          "total_citations": 3,
+          "hallucinated_urls": []
+        },
+        "memory_compliance": {
+          "passed": true,
+          "score": 1.0,
+          "directive_coverage": 1.0,
+          "matched_directives": [
+            "cold_water_energy_savings",
+            "no_silk_stain_claims"
+          ],
+          "prohibited_violations": []
+        },
+        "tone_alignment": {
+          "passed": true,
+          "cosine_similarity": 0.9716,
+          "threshold": 0.85
+        }
+      }
+    },
+    {
+      "test_id": "eval_02",
+      "brand_id": "brand_aurora",
+      "category": "baby_care",
+      "passed": true,
+      "rubrics": {
+        "schema_conformance": {
+          "passed": true,
+          "score": 1.0,
+          "initiative_id": "20531e5b-a2a7-438c-94f6-4dbe38e62fc3",
+          "errors": []
+        },
+        "grounding_accuracy": {
+          "passed": true,
+          "score": 1.0,
+          "verified_count": 2,
+          "total_citations": 2,
+          "hallucinated_urls": []
+        },
+        "memory_compliance": {
+          "passed": true,
+          "score": 1.0,
+          "directive_coverage": 1.0,
+          "matched_directives": [
+            "pediatrician_tested",
+            "gentle_comfort"
+          ],
+          "prohibited_violations": []
+        },
+        "tone_alignment": {
+          "passed": true,
+          "cosine_similarity": 0.9528,
+          "threshold": 0.85
+        }
+      }
+    },
+    {
+      "test_id": "eval_03",
+      "brand_id": "brand_lumina",
+      "category": "home_care",
+      "passed": true,
+      "rubrics": {
+        "schema_conformance": {
+          "passed": true,
+          "score": 1.0,
+          "initiative_id": "26f3b776-e653-4ad4-8719-b848b2967632",
+          "errors": []
+        },
+        "grounding_accuracy": {
+          "passed": true,
+          "score": 1.0,
+          "verified_count": 2,
+          "total_citations": 2,
+          "hallucinated_urls": []
+        },
+        "memory_compliance": {
+          "passed": true,
+          "score": 1.0,
+          "directive_coverage": 1.0,
+          "matched_directives": [
+            "zero_plastic_packaging",
+            "biodegradable"
+          ],
+          "prohibited_violations": []
+        },
+        "tone_alignment": {
+          "passed": true,
+          "cosine_similarity": 0.9626,
+          "threshold": 0.85
+        }
+      }
+    },
+    {
+      "test_id": "eval_04",
+      "brand_id": "brand_coldstart",
+      "category": "personal_care",
+      "passed": true,
+      "rubrics": {
+        "schema_conformance": {
+          "passed": true,
+          "score": 1.0,
+          "initiative_id": "b5c13209-95a4-48b8-a3cf-b41e16144754",
+          "errors": []
+        },
+        "grounding_accuracy": {
+          "passed": true,
+          "score": 1.0,
+          "verified_count": 3,
+          "total_citations": 3,
+          "hallucinated_urls": []
+        },
+        "memory_compliance": {
+          "passed": true,
+          "score": 1.0,
+          "directive_coverage": 1.0,
+          "matched_directives": [],
+          "prohibited_violations": []
+        },
+        "tone_alignment": {
+          "passed": true,
+          "cosine_similarity": 0.9251,
+          "threshold": 0.85
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "project_id": "wortz-project-352116",
+  "location": "us-central1",
+  "workflow_name": "trend_discovery_flow",
+  "service_account": "workflow-runner-sa@wortz-project-352116.iam.gserviceaccount.com",
+  "env_vars": {
+    "AGENT_RUNNER_URL": "https://trend-agent-service-679926387543.us-central1.run.app",
+    "DATA_SERVICE_URL": "https://data-service-679926387543.us-central1.run.app"
+  },
+  "default_execution_input": {
+    "brand_id": "brand_apex",
+    "category": "fabric_care",
+    "search_query": "cold water eco wash consumer trends 2026"
+  }
+}

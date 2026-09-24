@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}HITL Approval Queue & Live Workflow Graph — Brand Building HITL Approval Example Application{% endblock %}
+
+{% block content %}
+<!-- Top KPI Metrics Bar (PRD Section 7.1) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 shadow-lg">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Initiatives</span>
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30">AlloyDB JSONB</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+            <span id="metric-total" class="text-3xl font-extrabold text-white">{{ metrics.total }}</span>
+            <span class="text-xs text-slate-400">active brand briefs</span>
+        </div>
+    </div>
+
+    <div class="rounded-2xl bg-slate-900 border border-amber-500/30 p-4 shadow-lg">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Pending Approval (WAITING)</span>
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">0 CPU Dormant</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+            <span id="metric-pending" class="text-3xl font-extrabold text-amber-400">{{ metrics.pending_approval }}</span>
+            <span class="text-xs text-slate-400">awaiting HTTP callback</span>
+        </div>
+    </div>
+
+    <div class="rounded-2xl bg-slate-900 border border-emerald-500/30 p-4 shadow-lg">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-300">Approved (Step 2 Handoff)</span>
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Eventarc Ready</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+            <span id="metric-approved" class="text-3xl font-extrabold text-emerald-400">{{ metrics.approved }}</span>
+            <span class="text-xs text-slate-400">contract-validated</span>
+        </div>
+    </div>
+
+    <div class="rounded-2xl bg-slate-900 border border-purple-500/30 p-4 shadow-lg">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-purple-300">Memory Bank Directives</span>
+            <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">Continuous Learning</span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+            <span id="metric-memories" class="text-3xl font-extrabold text-purple-400">{{ metrics.memory_rules_learned }}</span>
+            <span class="text-xs text-slate-400">active brand guardrails</span>
+        </div>
+    </div>
+</div>
+
+<!-- Live Asynchronous Cloud Workflows State Machine DAG Overview -->
+<section class="rounded-2xl bg-slate-900 border border-slate-800 p-5 mb-6 shadow-xl">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+                <h2 class="text-base font-bold text-white">Asynchronous Workflow Graph — Google Cloud Workflows (<code class="text-blue-300 text-xs">{{ workflow_name }}</code>)</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Real-time state machine positioning of brand initiative artifacts across Cognitive, Orchestration, and System of Record tiers.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/graph" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-blue-300 border border-slate-700 transition">
+                🔍 Open Full-Screen Interactive Workflow Graph →
+            </a>
+        </div>
+    </div>
+
+    <!-- 5-Stage Macro Pipeline Representation with Live Artifact Tokens -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-3.5 relative">
+        <!-- Stage 1 -->
+        <div class="rounded-xl bg-slate-950/90 border border-blue-500/30 p-4 flex flex-col justify-between overflow-hidden">
+            <div>
+                <div class="flex items-center justify-between gap-1 text-[10px] text-blue-300 font-bold uppercase tracking-wider">
+                    <span class="truncate">1. Cognitive</span>
+                    <span class="px-1.5 py-0.5 rounded bg-blue-500/15 shrink-0">ADK + Gemini</span>
+                </div>
+                <p class="text-xs font-bold text-white mt-1.5 truncate">execute_trend_agent</p>
+                <p class="text-[11px] text-slate-400 mt-1 leading-snug">Search Grounding + Agent Platform Memory Bank</p>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1">
+                <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-medium">✓ Schema Validated</span>
+            </div>
+        </div>
+
+        <!-- Stage 2 -->
+        <div class="rounded-xl bg-slate-950/90 border border-indigo-500/30 p-4 flex flex-col justify-between overflow-hidden">
+            <div>
+                <div class="flex items-center justify-between gap-1 text-[10px] text-indigo-300 font-bold uppercase tracking-wider">
+                    <span class="truncate">2. Record Tier</span>
+                    <span class="px-1.5 py-0.5 rounded bg-indigo-500/15 shrink-0">AlloyDB</span>
+                </div>
+                <p class="text-xs font-bold text-white mt-1.5 truncate">persist &amp; callback</p>
+                <p class="text-[11px] text-slate-400 mt-1 leading-snug">JSONB saved + <code class="text-indigo-200">events.create_callback</code></p>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1">
+                <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 font-medium">✓ ACID Persisted</span>
+            </div>
+        </div>
+
+        <!-- Stage 3: Zero-Compute HITL Gate -->
+        <div class="rounded-xl bg-amber-950/25 border-2 border-amber-500/60 p-4 flex flex-col justify-between node-waiting-glow overflow-hidden">
+            <div>
+                <div class="flex items-center justify-between gap-1 text-[10px] text-amber-300 font-bold uppercase tracking-wider">
+                    <span class="truncate">3. HITL Gate</span>
+                    <span class="px-1.5 py-0.5 rounded bg-amber-500/25 text-amber-200 shrink-0">WAITING</span>
+                </div>
+                <p class="text-xs font-bold text-white mt-1.5 truncate">await_human_approval</p>
+                <p class="text-[11px] text-amber-200/85 mt-1 leading-snug"><code class="text-amber-300">events.await_callback</code> (0 CPU / 0 Quota)</p>
+            </div>
+            <div class="mt-3 pt-2 border-t border-amber-500/30 flex flex-wrap gap-1.5">
+                {% for item in initiatives if item.status == 'PENDING_APPROVAL' %}
+                <a href="/initiatives/{{ item.id }}" class="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/25 border border-amber-400/50 text-amber-100 font-semibold hover:bg-amber-500/40 transition truncate max-w-full">
+                    ⏸ {{ item.brand_id }} (v{{ item.version }})
+                </a>
+                {% else %}
+                <span class="text-[10px] text-slate-400">Queue empty</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Stage 4: Revision Loop & Memory Distillation -->
+        <div class="rounded-xl bg-slate-950/90 border border-purple-500/40 p-4 flex flex-col justify-between overflow-hidden">
+            <div>
+                <div class="flex items-center justify-between gap-1 text-[10px] text-purple-300 font-bold uppercase tracking-wider">
+                    <span class="truncate">4. Feedback Loop</span>
+                    <span class="px-1.5 py-0.5 rounded bg-purple-500/15 shrink-0">Max 3x</span>
+                </div>
+                <p class="text-xs font-bold text-white mt-1.5 truncate">loop_revision_step</p>
+                <p class="text-[11px] text-slate-400 mt-1 leading-snug">Writes rule via <code class="text-purple-200">memories:generate</code></p>
+            </div>
+            <div class="mt-3 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1.5">
+                {% for item in initiatives if item.revision_count > 0 %}
+                <a href="/initiatives/{{ item.id }}" class="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/25 border border-purple-400/50 text-purple-200 font-semibold truncate max-w-full">
+                    🔄 {{ item.brand_id }} (Rev #{{ item.revision_count }})
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Stage 5: Approved Downstream Handoff -->
+        <div class="rounded-xl bg-emerald-950/25 border border-emerald-500/50 p-4 flex flex-col justify-between overflow-hidden">
+            <div>
+                <div class="flex items-center justify-between gap-1 text-[10px] text-emerald-300 font-bold uppercase tracking-wider">
+                    <span class="truncate">5. Approved</span>
+                    <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 shrink-0">STEP 2</span>
+                </div>
+                <p class="text-xs font-bold text-white mt-1.5 truncate">trigger_downstream_step2</p>
+                <p class="text-[11px] text-emerald-200/85 mt-1 leading-snug">Pulls <code class="text-emerald-300">memories:retrieve</code> + JSONB</p>
+            </div>
+            <div class="mt-3 pt-2 border-t border-emerald-500/30 flex flex-wrap gap-1.5">
+                {% for item in initiatives if item.status == 'APPROVED' %}
+                <a href="/initiatives/{{ item.id }}" class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/50 text-emerald-100 font-semibold hover:bg-emerald-500/40 transition truncate max-w-full">
+                    ✅ {{ item.brand_id }} (v{{ item.version }})
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Initiatives Queue Table (PRD Section 7.1) -->
+<section class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
+    <div class="px-6 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h2 class="text-base font-bold text-white">Enterprise Initiative Approvals Queue</h2>
+            <p class="text-xs text-slate-400">Click any initiative card to inspect Google Search Grounding citations, Memory Bank compliance, and dispatch a Cloud Workflows callback.</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+            <a href="/" class="px-3 py-1.5 rounded-lg border {% if not selected_status %}bg-blue-600/20 border-blue-500 text-blue-200{% else %}bg-slate-950 border-slate-800 text-slate-400{% endif %}">All ({{ metrics.total }})</a>
+            <a href="/?status=PENDING_APPROVAL" class="px-3 py-1.5 rounded-lg border {% if selected_status == 'PENDING_APPROVAL' %}bg-amber-500/20 border-amber-500 text-amber-200{% else %}bg-slate-950 border-slate-800 text-slate-400{% endif %}">Pending Approval ({{ metrics.pending_approval }})</a>
+            <a href="/?status=APPROVED" class="px-3 py-1.5 rounded-lg border {% if selected_status == 'APPROVED' %}bg-emerald-500/20 border-emerald-500 text-emerald-200{% else %}bg-slate-950 border-slate-800 text-slate-400{% endif %}">Approved ({{ metrics.approved }})</a>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-slate-800 bg-slate-950/60 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <th class="py-3.5 px-5">Initiative &amp; Brand</th>
+                    <th class="py-3.5 px-4">Category</th>
+                    <th class="py-3.5 px-4">Discovered Trend Brief</th>
+                    <th class="py-3.5 px-4">Grounding &amp; Memory</th>
+                    <th class="py-3.5 px-4">Revision / Version</th>
+                    <th class="py-3.5 px-4">Workflow Callback State</th>
+                    <th class="py-3.5 px-5 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/80 text-sm">
+                {% for item in initiatives %}
+                <tr class="hover:bg-slate-800/40 transition group" data-initiative-id="{{ item.id }}">
+                    <td class="py-4 px-5">
+                        <div class="flex items-center gap-2.5">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 text-blue-300 border border-slate-700">{{ item.brand_id }}</span>
+                            <code class="text-xs text-slate-400">{{ item.id[:8] }}</code>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="text-xs font-medium text-slate-300">{{ item.category }}</span>
+                    </td>
+                    <td class="py-4 px-4 max-w-md">
+                        <a href="/initiatives/{{ item.id }}" class="font-bold text-white group-hover:text-blue-400 transition block">{{ item.trend_name }}</a>
+                        <p class="text-xs text-slate-400 line-clamp-1 mt-0.5">{{ item.brief_payload.trend_summary }}</p>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                                🔗 {{ item.brief_payload.citations | length }} Sources
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                                🧠 {{ item.brief_payload.memories_applied | length }} Rules
+                            </span>
+                            <span class="text-emerald-300 font-semibold">{{ (item.brief_payload.confidence_score * 100) | int }}%</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="text-xs font-mono px-2 py-1 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                            v{{ item.version }} • Rev {{ item.revision_count }}/3
+                        </span>
+                    </td>
+                    <td class="py-4 px-4">
+                        {% if item.status == 'PENDING_APPROVAL' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                            PENDING_APPROVAL
+                        </span>
+                        {% elif item.status == 'APPROVED' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            APPROVED
+                        </span>
+                        {% elif item.status == 'REVISION_REQUESTED' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/15 text-purple-300 border border-purple-500/40">
+                            🔄 REVISION_REQUESTED
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-300 border border-rose-500/40">
+                            ✕ {{ item.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-5 text-right">
+                        <a href="/initiatives/{{ item.id }}" id="review-btn-{{ item.id[:8] }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/20 transition">
+                            Review Brief →
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

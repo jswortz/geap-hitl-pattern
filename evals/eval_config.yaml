@@ -1,0 +1,13 @@
+# Antigravity Evaluation Suite Configuration (PRD Section 13)
+suite_name: "brand_building_hitl_approval_example_evals"
+version: "1.0.0"
+project_id: "wortz-project-352116"
+region: "us-central1"
+dataset_path: "evals/test_dataset.jsonl"
+output_path: "evals/results/latest_run.json"
+thresholds:
+  schema_conformance: 1.0
+  grounding_accuracy: 1.0
+  memory_compliance_min_coverage: 0.90
+  prohibited_terms_max_rate: 0.0
+  tone_alignment_min_cosine: 0.85

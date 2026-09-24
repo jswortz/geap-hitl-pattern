@@ -1,0 +1,51 @@
+/* Custom animations and workflow graph styling for Brand Building HITL Approval Example Application HITL Demo */
+
+@keyframes pulse-amber {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55), 0 0 20px rgba(245, 158, 11, 0.25);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(245, 158, 11, 0), 0 0 30px rgba(245, 158, 11, 0.45);
+    }
+}
+
+@keyframes pulse-emerald {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55), 0 0 20px rgba(16, 185, 129, 0.25);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0), 0 0 30px rgba(16, 185, 129, 0.45);
+    }
+}
+
+@keyframes pulse-blue {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.55), 0 0 20px rgba(59, 130, 246, 0.25);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(59, 130, 246, 0), 0 0 30px rgba(59, 130, 246, 0.45);
+    }
+}
+
+.node-waiting-glow {
+    animation: pulse-amber 2.2s infinite;
+}
+
+.node-approved-glow {
+    animation: pulse-emerald 2.4s infinite;
+}
+
+.node-loop-glow {
+    animation: pulse-blue 2.0s infinite;
+}
+
+@keyframes dash-flow {
+    to {
+        stroke-dashoffset: -24;
+    }
+}
+
+.animated-edge {
+    stroke-dasharray: 6, 6;
+    animation: dash-flow 1.2s linear infinite;
+}

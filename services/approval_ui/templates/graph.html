@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Live Asynchronous Workflow Graph — Google Cloud Workflows & 3-Tier HITL{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+            <h1 class="text-xl font-extrabold text-white">Live Asynchronous Workflow Graph &amp; State Machine Visualizer</h1>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">
+            Visualizing multi-brand artifacts progressing asynchronously through <code class="text-blue-300">trend_discovery_flow</code> on Google Cloud Workflows (`{{ project_id }}`)
+        </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+        <button type="button" id="btn-simulate-async-progression" onclick="runAsyncWorkflowGraphSimulation()"
+            class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white shadow-lg transition">
+            ▶ Step Asynchronous Approval Simulation
+        </button>
+        <a href="/" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700">
+            ← Return to Queue
+        </a>
+    </div>
+</div>
+
+<!-- Full Interactive SVG + Card DAG Diagram -->
+<div class="rounded-2xl bg-slate-900 border border-slate-800 p-6 mb-6 shadow-2xl">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
+        <!-- Tier 1 & 2: Cognitive Agent -->
+        <div id="graph-stage-cognitive" class="rounded-2xl bg-slate-950 border-2 border-blue-500/40 p-4 relative">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">Tier 2 • Cognitive</span>
+                <span class="text-xs font-mono text-slate-400">Steps 1–2</span>
+            </div>
+            <h3 class="text-sm font-extrabold text-white">ADK Trend Discovery Agent</h3>
+            <p class="text-xs text-slate-400 mt-1">Vertex AI Gemini + Google Search Grounding + Memory Bank Retrieval</p>
+            <div id="tokens-stage-cognitive" class="mt-4 pt-3 border-t border-slate-800 space-y-2 min-h-[72px]">
+                <div class="text-[11px] px-2.5 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-200 font-semibold">
+                    ⚡ Active Prompt Cache &amp; Grounding
+                </div>
+            </div>
+        </div>
+
+        <!-- Tier 3: Zero-Compute Callback Suspension -->
+        <div id="graph-stage-waiting" class="rounded-2xl bg-amber-950/20 border-2 border-amber-400 p-4 relative node-waiting-glow">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/25 text-amber-200">Tier 3 • Zero-Compute Wait</span>
+                <span class="text-xs font-mono text-amber-300">Steps 3–5</span>
+            </div>
+            <h3 class="text-sm font-extrabold text-white">http.await_callback (WAITING)</h3>
+            <p class="text-xs text-amber-200/80 mt-1">Durable suspension in Cloud Workflows (0 CPU, 0 RAM, 30-day timeout)</p>
+            <div id="tokens-stage-waiting" class="mt-4 pt-3 border-t border-amber-500/30 space-y-2 min-h-[72px]">
+                {% for item in initiatives if item.status == 'PENDING_APPROVAL' %}
+                <div id="graph-token-{{ item.id[:8] }}" data-init-id="{{ item.id }}" class="p-2.5 rounded-xl bg-amber-500/20 border border-amber-400/60 text-xs flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-white block">{{ item.brand_id }} (v{{ item.version }})</span>
+                        <span class="text-[11px] text-amber-200">{{ item.trend_name[:34] }}...</span>
+                    </div>
+                    <button type="button" onclick="quickApproveFromGraph('{{ item.id }}')" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-[11px] transition">
+                        Approve ✓
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Revision & Continuous Learning Branch -->
+        <div id="graph-stage-revision" class="rounded-2xl bg-purple-950/20 border-2 border-purple-500/50 p-4 relative">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/25 text-purple-200">Continuous Learning Loop</span>
+                <span class="text-xs font-mono text-purple-300">Step 8b</span>
+            </div>
+            <h3 class="text-sm font-extrabold text-white">loop_revision_step + Memory Sync</h3>
+            <p class="text-xs text-purple-200/80 mt-1">Distills reviewer feedback into Vertex AI Memory Bank &amp; re-invokes Agent 1</p>
+            <div id="tokens-stage-revision" class="mt-4 pt-3 border-t border-purple-500/30 space-y-2 min-h-[72px]">
+                {% for item in initiatives if item.revision_count > 0 %}
+                <div class="p-2.5 rounded-xl bg-purple-500/20 border border-purple-400/50 text-xs">
+                    <span class="font-bold text-purple-200 block">🔄 {{ item.brand_id }} — Revision #{{ item.revision_count }}</span>
+                    <span class="text-[11px] text-slate-300">Distilled rule synced to Memory Bank</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Tier 4 & Step 2 Handoff: Approved -->
+        <div id="graph-stage-approved" class="rounded-2xl bg-emerald-950/25 border-2 border-emerald-400 p-4 relative node-approved-glow">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/25 text-emerald-200">Tier 4 • Approved Record</span>
+                <span class="text-xs font-mono text-emerald-300">Steps 6–9a</span>
+            </div>
+            <h3 class="text-sm font-extrabold text-white">trigger_downstream_step2</h3>
+            <p class="text-xs text-emerald-200/80 mt-1">AlloyDB ACID commit (`APPROVED`) + Eventarc trigger for Creative Asset Pipeline</p>
+            <div id="tokens-stage-approved" class="mt-4 pt-3 border-t border-emerald-500/30 space-y-2 min-h-[72px]">
+                {% for item in initiatives if item.status == 'APPROVED' %}
+                <div class="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400/60 text-xs flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-white block">✅ {{ item.brand_id }} (v{{ item.version }})</span>
+                        <span class="text-[11px] text-emerald-200">{{ item.trend_name[:34] }}...</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-emerald-400/20 text-emerald-200 font-mono text-[10px]">STEP 2</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Event Stream Telemetry Log -->
+    <div class="rounded-xl bg-slate-950 border border-slate-800 p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-blue-300">📡 Live Cloud Workflows Callback &amp; State Transition Stream</span>
+            <span id="stream-status-indicator" class="text-[11px] font-mono text-emerald-400">● Connected to wortz-project-352116</span>
+        </div>
+        <div id="workflow-event-log" class="font-mono text-xs text-slate-300 space-y-1.5 max-h-48 overflow-y-auto">
+            <div>[16:00:05 UTC] WORKFLOW_SUSPENDED: exec-apex-001 (brand_apex) paused at http.await_callback -> 0 CPU active</div>
+            <div>[16:15:00 UTC] CALLBACK_POST: exec-aurora-002 received REVISION_REQUESTED -> Distilled rule mem_sync_01 saved to Vertex AI Memory Bank</div>
+            <div>[16:20:05 UTC] WORKFLOW_LOOP: exec-aurora-002 re-invoked Agent 1 (Revision #1) -> Persisted v2 draft -> Waiting at http.await_callback</div>
+            <div>[16:30:00 UTC] CALLBACK_POST: exec-lumina-003 received APPROVED -> Transitioned AlloyDB status=APPROVED -> Triggered Step 2 Eventarc</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

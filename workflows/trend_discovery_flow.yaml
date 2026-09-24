@@ -1,0 +1,185 @@
+# Google Cloud Workflows Specification: Autonomous Trend-to-Asset HITL Pipeline (PRD Section 5)
+# Deployed to: projects/wortz-project-352116/locations/us-central1/workflows/trend_discovery_flow
+
+main:
+  params: [args]
+  steps:
+    - init_constants:
+        assign:
+          - brand_id: '${default(map.get(args, "brand_id"), "brand_apex")}'
+          - category: '${default(map.get(args, "category"), "fabric_care")}'
+          - revision_count: '${default(map.get(args, "revision_count"), 0)}'
+          - revision_notes: '${default(map.get(args, "revision_notes"), "")}'
+          - initiative_uuid: '${default(map.get(args, "initiative_id"), null)}'
+          - search_query: '${default(map.get(args, "search_query"), "sustainable laundry cold water washing trends 2026")}'
+          - max_revisions: 3
+          - base_agent_url: '${default(sys.get_env("AGENT_RUNNER_URL"), default(map.get(args, "agent_runner_url"), "https://trend-agent-service-679926387543.us-central1.run.app"))}'
+          - agent_endpoint: '${base_agent_url + "/generate-trend-brief"}'
+          - db_api_url: '${default(sys.get_env("DATA_SERVICE_URL"), default(map.get(args, "data_service_url"), "https://data-service-679926387543.us-central1.run.app"))}'
+
+    - log_start:
+        call: sys.log
+        args:
+          severity: "INFO"
+          text: '${"Starting trend initiative workflow for brand: " + brand_id + " in category: " + category + " (revision: " + string(revision_count) + ")"}'
+
+    - execute_trend_agent:
+        call: http.post
+        args:
+          url: '${agent_endpoint}'
+          auth:
+            type: OIDC
+          body:
+            initiative_id: '${initiative_uuid}'
+            brand_id: '${brand_id}'
+            category: '${category}'
+            revision_count: '${revision_count}'
+            revision_notes: '${revision_notes}'
+            search_query: '${search_query}'
+        result: agent_response
+
+    - parse_agent_output:
+        assign:
+          - brief_data: '${agent_response.body.brief}'
+          - initiative_uuid: '${brief_data.initiative_id}'
+
+    - persist_draft_to_alloydb:
+        call: http.post
+        args:
+          url: '${db_api_url + "/initiatives"}'
+          auth:
+            type: OIDC
+          body:
+            initiative_id: '${initiative_uuid}'
+            brand_id: '${brand_id}'
+            category: '${category}'
+            trend_name: '${brief_data.trend_name}'
+            revision_count: '${revision_count}'
+            status: "PENDING_APPROVAL"
+            brief_payload: '${brief_data}'
+        result: db_record
+
+    - create_approval_callback:
+        # Note: Cloud Workflows stdlib module for HTTP callbacks is `events` (events.create_callback_endpoint)
+        call: events.create_callback_endpoint
+        args:
+          http_callback_method: "POST"
+        result: callback_details
+
+    - record_callback_in_alloydb:
+        call: http.post
+        args:
+          url: '${db_api_url + "/callbacks"}'
+          auth:
+            type: OIDC
+          body:
+            initiative_id: '${initiative_uuid}'
+            workflow_execution_id: '${sys.get_env("GOOGLE_CLOUD_WORKFLOW_EXECUTION_ID")}'
+            callback_url: '${callback_details.url}'
+            status: "WAITING"
+        result: callback_db_res
+
+    - log_suspension:
+        call: sys.log
+        args:
+          severity: "INFO"
+          text: '${"Initiative " + initiative_uuid + " written to AlloyDB. Workflow suspending on zero-compute callback: " + callback_details.url}'
+
+    - await_human_approval:
+        # Note: Cloud Workflows stdlib module for zero-compute suspension is `events.await_callback`
+        call: events.await_callback
+        args:
+          callback: '${callback_details}'
+          timeout: 2592000
+        result: review_event
+
+    - process_review_decision:
+        assign:
+          - decision: '${review_event.http_request.body.decision}'
+          - reviewer: '${default(map.get(review_event.http_request.body, "reviewer"), "director@enterprise.com")}'
+          - comments: '${default(map.get(review_event.http_request.body, "comments"), "")}'
+
+    - log_resumption:
+        call: sys.log
+        args:
+          severity: "INFO"
+          text: '${"Workflow resumed via callback. Decision: " + decision + " by " + reviewer}'
+
+    - update_alloydb_status:
+        call: http.patch
+        args:
+          url: '${db_api_url + "/initiatives/" + initiative_uuid + "/status"}'
+          auth:
+            type: OIDC
+          body:
+            status: '${decision}'
+            reviewer: '${reviewer}'
+            comments: '${comments}'
+        result: update_result
+
+    - check_branch:
+        switch:
+          - condition: '${decision == "APPROVED"}'
+            next: trigger_downstream_step2
+          - condition: '${decision == "REVISION_REQUESTED"}'
+            next: evaluate_revision_limits
+        next: handle_rejected
+
+    - evaluate_revision_limits:
+        switch:
+          - condition: '${revision_count < max_revisions}'
+            next: loop_revision_step
+        next: handle_max_revisions_exceeded
+
+    - loop_revision_step:
+        assign:
+          - revision_count: '${revision_count + 1}'
+          - revision_notes: '${comments}'
+        next: log_revision_loop
+
+    - log_revision_loop:
+        call: sys.log
+        args:
+          severity: "WARNING"
+          text: '${"Initiative " + initiative_uuid + " returned for revision. Incrementing count to " + string(revision_count)}'
+        next: log_start
+
+    - handle_max_revisions_exceeded:
+        call: sys.log
+        args:
+          severity: "ERROR"
+          text: '${"Initiative " + initiative_uuid + " exceeded maximum revisions (" + string(max_revisions) + "). Escalating to manual review."}'
+        next: return_escalated
+
+    - return_escalated:
+        return:
+          status: "ESCALATED_MANUAL_REVIEW"
+          initiative_id: '${initiative_uuid}'
+          reason: "Max revisions reached"
+
+    - trigger_downstream_step2:
+        call: sys.log
+        args:
+          severity: "INFO"
+          text: '${"Initiative " + initiative_uuid + " approved. Ready for Step 2 Creative Asset Brief generation."}'
+        next: return_approved
+
+    - return_approved:
+        return:
+          status: "SUCCESS"
+          initiative_id: '${initiative_uuid}'
+          outcome: "APPROVED"
+          revision_count: '${revision_count}'
+
+    - handle_rejected:
+        call: sys.log
+        args:
+          severity: "INFO"
+          text: '${"Initiative " + initiative_uuid + " was rejected."}'
+        next: return_rejected
+
+    - return_rejected:
+        return:
+          status: "TERMINATED"
+          initiative_id: '${initiative_uuid}'
+          outcome: "REJECTED"
